@@ -6,26 +6,20 @@ import {
   getGroupedDiastereotopicAtomIDs,
 } from 'openchemlib-utils';
 import OCL from 'openchemlib/minimal';
+
+import before from '../data/rangesBefore.json';
+import after from '../data/rangesAfter.json';
 //read the json files in data folder, it contains the ranges before and after the labile proton filtering
 
-let before = 
-  readFileSync(join(__dirname, '../data/rangesBefore.JSON'), 'ascii');
+for (let input of before) {
+    let { molfile, ranges } = input;
+    let molecule = OCL.Molecule.fromMolfile(molfile);
 
-// let after = JSON.parse(
-//   readFileSync(join(__dirname, '../data/rangesAfter.JSON'), 'utf-8'),
-// );
-console.log(JSON.parse(before))
-
-
-// for (let input of before) {
-//     let { molfile, ranges } = input;
-//     let molecule = OCL.Molecule.fromMolfile(molfile);
-
-//     molecule.addImplicitHydrogens();
-//     molecule.addMissingChirality();
-//     checkIntegration(molecule, ranges);
-//     break;
-// }
+    molecule.addImplicitHydrogens();
+    molecule.addMissingChirality();
+    checkIntegration(molecule, ranges);
+    break;
+}
 // now, it is need to ensure the correct scalling of integration data in ranges with respect to all prontos and not labile protons respectively.
 // it expect that each element in before and after has a molfile and ranges properties. Also the lenght of before and after are equal.
 
