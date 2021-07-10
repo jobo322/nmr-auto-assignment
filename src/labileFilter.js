@@ -1,12 +1,29 @@
 import OCL from 'openchemlib/minimal';
-import { options } from 'superagent';
+import { gsd } from 'ml-gsd';
+import { getErrorFunction } from './getErrorFunction';
+import { initialDataGenerator } from './initialDataGenerator';
+import { gaussian } from './gaussian';
+import { gaussianBounds } from './gaussianBounds';
+import { simulatedAnnealing } from './simulatedAnnealing';
 
-function labileRange(experimentalData, molfile) {
+
+export function labileFilter(experimentalData, molfile, options = {}) {
+
+  let peaksOptions = Object.assign({}, {
+    thresholdFactor: 1,
+    minMaxRatio: 0.01,
+    broadRatio: 0.00025,
+    smoothY: true,
+    widthFactor: 4,
+    realTop: true,
+    functionName: 'lorentzian',
+    broadWidth: 0.25,
+    sgOptions: { windowSize: 9, polynomial: 3 },
+  }, options);
+
   let molecule = OCL.Molecule.fromMolfile(molfile);
   molecule.addImplicitHydrogens();
   let newMolfile = molecule.toMolfile();
-  API.createData('newMolfile', newMolfile);
-  // let prediction = await predictor.spinus(molfile, {group: true})
   let machineFrequency = experimentalData.observeFrequencyX();
   let spectraProperties = {
     frequency: machineFrequency, //MHz
@@ -17,12 +34,7 @@ function labileRange(experimentalData, molfile) {
     maxClusterSize: 8,
     output: 'xy',
   };
-  // let predictedData = SD.NMR.fromSignals(prediction, spectraProperties);
-  // predictedData.setMinMax(0,1);
-  // let predictedSpectra= {
-  //         "x" : predictedData.getXData(),
-  //         "y" : predictedData.getYData(),
-  // };
+
   let conections = molecule.getAllPaths({ toLabel: 'H', maxLength: 1 });
   let labileProtonData = conections.filter((x) => x.fromLabel !== 'C');
   let heteroatomsList = labileProtonData.map((x) => x.fromLabel);
@@ -57,26 +69,8 @@ function labileRange(experimentalData, molfile) {
   filename = filename.replace('h1', '');
   filename = filename.replace(/[^0-9]/g, '');
 
-  //@todo: this options as default options
-  // peaksOptions = Object.assign({}, defaultOptions, options);
-  // const {
-  //   thresholdFactor = 1,
-  //   minMaxRatio = 0.01,
-  //   broadRatio = 0.00025, 
-  // } = options;
-  let peaksOptions = {
-    thresholdFactor: 1,
-    minMaxRatio: 0.01,
-    broadRatio: 0.00025,
-    smoothY: true,
-    widthFactor: 4,
-    realTop: true,
-    functionName: 'lorentzian',
-    broadWidth: 0.25,
-    sgOptions: { windowSize: 9, polynomial: 3 },
-  };
 
-  let peakListData = GSD.gsd(
+  let peakListData = gsd(
     experimentalSpectra.x,
     experimentalSpectra.y,
     peaksOptions,
@@ -88,20 +82,16 @@ function labileRange(experimentalData, molfile) {
     return Math.max(a, b);
   });
 
-  //use ml-array-standard-deviation
-  let widthSD = standardDeviation(widths);
-
   let maxWidthPeakData = peakListData[widths.indexOf(maxwidth)];
   let maxWidthPeak = {
     x: [maxWidthPeakData.x],
     y: [maxWidthPeakData.y],
   };
 
-//   let peakList = {
-//     x: peakListData.map((x) => x.x),
-//     y: peakListData.map((x) => x.y),
-//   };
-  // API.createData('peakList', peakList)
+  //   let peakList = {
+  //     x: peakListData.map((x) => x.x),
+  //     y: peakListData.map((x) => x.y),
+  //   };
 
   let nH = sample.general.ocl.nH;
 
@@ -116,22 +106,8 @@ function labileRange(experimentalData, molfile) {
     compile: true,
     frequencyCluster: 20,
   });
-
-  // for(let i = 0; i < ranges.length; i++){
-  //     totalArea = totalArea + integralValues[i]
-  // }
-
-  // for (let j = ranges.length - 1; j >= 0; j--) {
-  //     ranges[j].integral *= nH / totalArea;
-  // }
-  // ranges.forEach((range, index)=> {
-  //                 range.signalID = "1H_" + index;
-  //             });
-
   experimentalSpectra.x = experimentalSpectra.x;
-//   API.createData('experimentalSpectra', experimentalSpectra);
-//   API.createData('maxWidthPeak', maxWidthPeak);
-//   API.createData('molfile', molfile);
+
   let labileProtonRange = ranges.filter(
     (x) => x.from <= maxWidthPeak.x && x.to > maxWidthPeak.x,
   );
@@ -155,8 +131,7 @@ function labileRange(experimentalData, molfile) {
     y: subYspectra,
   };
 
-//   API.createData('subSpectra', subSpectra);
-// use ml-array-max instead of reduce
+  // use ml-array-max instead of reduce
   let subYMax = subSpectra.y.reduce(function (a, b) {
     return Math.max(a, b);
   });
@@ -201,10 +176,9 @@ function labileRange(experimentalData, molfile) {
     fitArray[i] = simulatedAnnealing(fitOptions);
   }
   let optimumArray = fitArray.map((x) => x.optimum);
-//   API.createData('optimumArray', optimumArray);
   let optimumSD = standardDeviation(optimumArray);
-//   console.log(optimumSD, 'optimumSD');
-//@TODO: use ml-array-min
+  //   console.log(optimumSD, 'optimumSD');
+  //@TODO: use ml-array-min
   let optimum = optimumArray.reduce(function (a, b) {
     return Math.min(a, b);
   });
@@ -224,7 +198,6 @@ function labileRange(experimentalData, molfile) {
     y: gaussian(fit.best, subSpectra.x),
   };
 
-//   API.createData('fitData', fitData);
   subXSpectra = experimentalSpectra.x.filter(
     (x) => x > labileProtonRange[0].from && x < labileProtonRange[0].to,
   );
@@ -241,8 +214,7 @@ function labileRange(experimentalData, molfile) {
     x: [subXSpectra[0], subXSpectra[subXSpectra.length - 1]],
     y: [0.5, 0.5],
   };
-//   API.createData('bounds', bounds);
-//   API.createData('subSpectra', subSpectra);
+
   let maxIntensity = subSpectra.y.reduce(function (a, b) {
     return Math.max(a, b);
   });
@@ -274,7 +246,8 @@ function labileRange(experimentalData, molfile) {
     ranges[j].integral *= nonLabileProtonNUmber / totalArea;
   }
 
-//   let annotations = nmrGUI.annotations1D(ranges);
-
   return ranges;
+
 }
+
+
