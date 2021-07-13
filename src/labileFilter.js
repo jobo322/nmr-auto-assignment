@@ -1,50 +1,29 @@
-import OCL from 'openchemlib/minimal';
-import { gsd } from 'ml-gsd';
-import { fromJcamp } from 'common-spectrum';
-import { fromJCAMP } from 'nmr-parser'
-import { xyAutoPeaksPicking } from 'nmr-processing'
-import { xyAutoRangesPicking } from 'nmr-processing'
 import { getErrorFunction } from './getErrorFunction';
 import { initialDataGenerator } from './initialDataGenerator';
-import {standardDeviation} from './standardDeviation'
+import { standardDeviation } from './standardDeviation';
 import { gaussian } from './gaussian';
 import { gaussianBounds } from './gaussianBounds';
 import { simulatedAnnealing } from './simulatedAnnealing';
 import { labileData } from './labileData';
 
-
-export function labileFilter(data, molfile, peaks) {
-
-  let molecule = OCL.Molecule.fromMolfile(molfile);
+export function labileFilter(data, molecule, ranges) {
+  
   molecule.addImplicitHydrogens();
   let labileProton = labileData(molecule).labileProton;
 
-  let nH = molecule.getMolecularFormula().formula.replace(/.*H([0-9]+).*/, '$1') * 1;
-  let labileProtonNumber = labileData(molecule).labileProtonNumber
-  // // //@TODO: use nmr-processing for ranges picking
-  let rangeOptions = {
-    ranges: {
-      'nH': nH,
-      realTop: false,
-      thresholdFactor: 0.8,
-      keepPeaks: true,
-      optimize: true,
-      integralType: "sum",
-      compile: true,
-      frequencyCluster: 20
-    }
-  }
-  let ranges = xyAutoRangesPicking(data, rangeOptions)
-  let peakList = []
+  let nH =
+    molecule.getMolecularFormula().formula.replace(/.*H([0-9]+).*/, '$1') * 1;
+  let labileProtonNumber = labileData(molecule).labileProtonNumber;
+
+  let peakList = [];
   for (let i = 0; i < ranges.length; i++) {
     for (let j = 0; j < ranges[i].signal.length; j++) {
-
-      peakList.push(...ranges[i].signal[j].peak)
+      peakList.push(...ranges[i].signal[j].peak);
     }
   }
-  // experimentalData.setMinMax(0, 1);
+
   let widths = peakList.map((x) => x.width);
-  console.log('widths', widths)
+  console.log('widths', widths);
   // // //change this reduce for ml-array-max
   let maxwidth = widths.reduce(function (a, b) {
     return Math.max(a, b);
@@ -56,15 +35,12 @@ export function labileFilter(data, molfile, peaks) {
     y: maxWidthPeakData.y,
   };
 
-
-
   let labileProtonRange = ranges.filter(
     (a) => a.from <= maxWidthPeak.x && a.to > maxWidthPeak.x,
   );
 
-  console.log('ranges', ranges)
+  console.log('ranges', ranges);
   console.log('peakList', peakList);
-
 
   if (labileProtonRange.length === 0) {
     labileProtonRange[0] = {
@@ -75,7 +51,7 @@ export function labileFilter(data, molfile, peaks) {
     };
   }
 
-  console.log('labileProtonRange:', labileProtonRange)
+  console.log('labileProtonRange:', labileProtonRange);
 
   let subXSpectra = data.x.filter(
     (x) => x > labileProtonRange[0].from && x < labileProtonRange[0].to,
@@ -156,15 +132,6 @@ export function labileFilter(data, molfile, peaks) {
     y: gaussian(fit.best, subSpectra.x),
   };
 
-  // subXSpectra = data.x.filter(
-  //   (x) => x > labileProtonRange[0].from && x < labileProtonRange[0].to,
-  // );
-  // subYspectra = data.y.slice(
-  //   data.x.indexOf(subXSpectra[0]),
-  //   data.x.indexOf(subXSpectra[subXSpectra.length - 1]) + 1,
-  // );
-  // subSpectra.x = subXSpectra;
-  // subSpectra.y = subYspectra;
   let realWidth = Math.abs(
     subXSpectra[subXSpectra.length - 1] - subXSpectra[0],
   );
@@ -176,7 +143,7 @@ export function labileFilter(data, molfile, peaks) {
   let maxIntensity = subSpectra.y.reduce(function (a, b) {
     return Math.max(a, b);
   });
-  //@TODO: check this function 
+  //@TODO: check this function
   let boundsTest = gaussianBounds(subSpectra.x, subSpectra.y);
   let maxIntensityIndex = subSpectra.y.indexOf(maxIntensity);
   let subXMax = subSpectra.x.reduce(function (a, b) {
@@ -205,7 +172,4 @@ export function labileFilter(data, molfile, peaks) {
   }
 
   return ranges;
-
 }
-
-
