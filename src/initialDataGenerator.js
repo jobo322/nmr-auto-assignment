@@ -1,3 +1,4 @@
+import {standardDeviation} from './standardDeviation'
 export function initialDataGenerator(x,y){
     let subXMax =  x.reduce(function(a, b) {
     return Math.max(a, b);
