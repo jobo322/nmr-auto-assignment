@@ -154,12 +154,15 @@ export function labileFilter(data, molecule, ranges) {
   });
 
   let nonLabileProtonNumber = nH - labileProtonNumber;
-
-  // // let labileProtonRange = ranges.filter( x => (x.from <= maxWidthPeak.x && x.to > maxWidthPeak.x))
-  // //ranges, 'before'
-  // // for(let i = 0; i < ranges.length; i++){
-
-  // // }
+  labileProtonTotalArea = 0;
+  nonLabileProtonTotalArea = 0;
+  for(let i = 0; i < ranges.length; i++){
+    if(ranges[i] != labileProtonRange[0]){
+      ranges[i].labile = false
+      labileProtonTotalArea += 
+    }
+    else {ranges[i].labile = true}
+  }
   ranges = ranges.filter((x) => x != labileProtonRange[0]);
   let integralValues = ranges.map((x) => x.integral);
   // let totalArea = 0;
@@ -170,6 +173,6 @@ export function labileFilter(data, molecule, ranges) {
   for (let j = ranges.length - 1; j >= 0; j--) {
     ranges[j].integral *= nonLabileProtonNumber / totalArea;
   }
-
+  
   return ranges;
 }

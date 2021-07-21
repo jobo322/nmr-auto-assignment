@@ -1,4 +1,3 @@
-
 import { readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import {fromJCAMP} from 'nmr-parser'
