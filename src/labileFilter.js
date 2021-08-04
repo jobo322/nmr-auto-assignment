@@ -5,15 +5,18 @@ import { gaussian } from './gaussian';
 import { gaussianBounds } from './gaussianBounds';
 import { simulatedAnnealing } from './simulatedAnnealing';
 import { labileData } from './labileData';
+import {xNoiseSanPlot} from 'ml-spectra-processing';
 
 export function labileFilter(data, molecule, ranges) {
-  
   molecule.addImplicitHydrogens();
-  let labileProton = labileData(molecule).labileProton;
+  let labileProton = labileData(molecule).hasLabile;
+
+  let noise = xNoiseSanPlot(data)
+  console.log('noise: ', noise)
 
   let nH =
     molecule.getMolecularFormula().formula.replace(/.*H([0-9]+).*/, '$1') * 1;
-  let labileProtonNumber = labileData(molecule).labileProtonNumber;
+  let labileProtonNumber = labileData(molecule).nbAllLabiles;
 
   let peakList = [];
   for (let i = 0; i < ranges.length; i++) {
@@ -23,12 +26,10 @@ export function labileFilter(data, molecule, ranges) {
   }
 
   let widths = peakList.map((x) => x.width);
-  console.log('widths', widths);
   // // //change this reduce for ml-array-max
   let maxwidth = widths.reduce(function (a, b) {
     return Math.max(a, b);
   });
-
   let maxWidthPeakData = peakList[widths.indexOf(maxwidth)];
   let maxWidthPeak = {
     x: maxWidthPeakData.x,
@@ -39,9 +40,6 @@ export function labileFilter(data, molecule, ranges) {
     (a) => a.from <= maxWidthPeak.x && a.to > maxWidthPeak.x,
   );
 
-  console.log('ranges', ranges);
-  console.log('peakList', peakList);
-
   if (labileProtonRange.length === 0) {
     labileProtonRange[0] = {
       info: {
@@ -50,8 +48,6 @@ export function labileFilter(data, molecule, ranges) {
       },
     };
   }
-
-  console.log('labileProtonRange:', labileProtonRange);
 
   let subXSpectra = data.x.filter(
     (x) => x > labileProtonRange[0].from && x < labileProtonRange[0].to,
@@ -83,7 +79,6 @@ export function labileFilter(data, molecule, ranges) {
       style: { lineColor: 'rgb(230,0,0)', lineWidth: 1, lineStyle: 1 },
     };
   }
-  //@TODO: import function
   let errorFunction = getErrorFunction(gaussian, subSpectra);
   let fitOptions = {
     initialT: 1.0,
@@ -111,7 +106,7 @@ export function labileFilter(data, molecule, ranges) {
   }
   let optimumArray = fitArray.map((x) => x.optimum);
   let optimumSD = standardDeviation(optimumArray);
-  //   console.log(optimumSD, 'optimumSD');
+
   //@TODO: use ml-array-min
   let optimum = optimumArray.reduce(function (a, b) {
     return Math.min(a, b);
@@ -154,25 +149,31 @@ export function labileFilter(data, molecule, ranges) {
   });
 
   let nonLabileProtonNumber = nH - labileProtonNumber;
-  labileProtonTotalArea = 0;
-  nonLabileProtonTotalArea = 0;
-  for(let i = 0; i < ranges.length; i++){
-    if(ranges[i] != labileProtonRange[0]){
-      ranges[i].labile = false
-      labileProtonTotalArea += 
+  let labileProtonTotalArea = 0;
+  let nonLabileProtonTotalArea = 0;
+  for (let i = 0; i < ranges.length; i++) {
+    if (ranges[i] != labileProtonRange[0]) {
+      ranges[i].labile = false;
+      nonLabileProtonTotalArea += ranges[i].integral;
+    } else {
+      labileProtonTotalArea += ranges[i].integral;
+      ranges[i].labile = true;
     }
-    else {ranges[i].labile = true}
   }
-  ranges = ranges.filter((x) => x != labileProtonRange[0]);
-  let integralValues = ranges.map((x) => x.integral);
-  // let totalArea = 0;
-  let totalArea = integralValues.reduce(function (a, b) {
-    return a + b;
-  }, 0);
+  // ranges = ranges.filter((x) => x != labileProtonRange[0]);
+  // let integralValues = ranges.map((x) => x.integral);
+  // // let totalArea = 0;
+  // let totalArea = integralValues.reduce(function (a, b) {
+  //   return a + b;
+  // }, 0);
   //ranges, 'after'
-  for (let j = ranges.length - 1; j >= 0; j--) {
-    ranges[j].integral *= nonLabileProtonNumber / totalArea;
+  for (let i = 0; i < ranges.length; i++) {
+    if (ranges[i].labile) {
+      ranges[i].integral *= labileProtonNumber / labileProtonTotalArea;
+    } else {
+      ranges[i].integral *= nonLabileProtonNumber / nonLabileProtonTotalArea;
+    }
   }
-  
+
   return ranges;
 }
