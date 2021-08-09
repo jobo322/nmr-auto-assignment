@@ -3,11 +3,11 @@ import { join } from 'path';
 import {fromJCAMP} from 'nmr-parser'
 import OCL from 'openchemlib/minimal';
 import { xyAutoRangesPicking } from 'nmr-processing';
-import { labileFilter } from './labileFilter';
-import { baselineData } from './baselineData';
 import { labileProtoSignalFilter } from './labileProtoSignalFilter';
+import { rangesFilter } from './rangesFilter'
+import { labileData } from './labileData'
 
-import {xNoiseSanPlot} from 'ml-spectra-processing';
+// import {xNoiseSanPlot} from 'ml-spectra-processing';
 
 let jcamp = readFileSync(join(__dirname,'../data/h1_15.jdx'), 'utf-8')
 let molfile = readFileSync(join(__dirname,'../data/mol_15.mol'), 'utf-8')
@@ -19,6 +19,7 @@ let experimentalSpectra = {
     'x' : experimentalData[0].dependentVariables[0].components[0].data.x,
     'y' : experimentalData[0].dependentVariables[0].components[0].data.y
 }
+
 if (experimentalSpectra.x[0] > experimentalSpectra.x[experimentalSpectra.x.length - 1]) {
     experimentalSpectra.x.reverse();
     experimentalSpectra.y.reverse();
@@ -39,11 +40,13 @@ let rangeOptions = {
     },
   };
 
-  
   let ranges = xyAutoRangesPicking(experimentalSpectra, rangeOptions);
+  console.log('ranges, ', ranges[0].signal[0])
 // console.log('test: ', labileFilter(experimentalSpectra, molecule, ranges))
-console.log('test: ', labileProtoSignalFilter(experimentalSpectra, ranges))
+// console.log('test: ', labileProtoSignalFilter(experimentalSpectra, ranges))
 // let test = labileProtoSignalFilter(experimentalSpectra, ranges);
+console.log('information: ', rangesFilter(experimentalSpectra, molecule, ranges))
+
 
 
 
