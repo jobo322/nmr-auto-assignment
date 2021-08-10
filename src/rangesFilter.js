@@ -5,6 +5,7 @@ import { baselineData } from './baselineData'
 import { xyAutoRangesPicking } from 'nmr-processing';
 
 export function rangesFilter(data, molecule, ranges){
+    console.log('ranges: ', ranges);
     molecule.addImplicitHydrogens();
     let labileProton = labileData(molecule);
     if (labileProton.hasLabile === false){
@@ -37,21 +38,8 @@ export function rangesFilter(data, molecule, ranges){
         }
         experimentalSpectraClone.y.fill(baselineMean,labileRangeIndexes.from, labileRangeIndexes.to +1)
         let nH =
-        molecule.getMolecularFormula().formula.replace(/.*H([0-9]+).*/, '$1') * 1;
-        let rangeOptions = {
-            ranges: {
-              nH: nH,
-              realTop: false,
-              thresholdFactor: 0.8,
-              keepPeaks: true,
-              optimize: true,
-              integralType: 'sum',
-              compile: true,
-              frequencyCluster: 20,
-            },
-          };
-        
-        let newRanges = xyAutoRangesPicking(experimentalSpectraClone, rangeOptions);
+        molecule.getMolecularFormula().formula.replace(/.*H([0-9]+).*/, '$1') * 1;        
+        let newRanges = xyAutoRangesPicking(experimentalSpectraClone);
         let labileProtonNumber = labileProton.nbAllLabiles
         let nonLabileTotalArea = (newRanges.map(a => a.integral).reduce(function(a, b){
             return a + b;

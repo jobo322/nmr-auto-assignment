@@ -1,8 +1,9 @@
 import { baselineData } from './baselineData';
 import { standardDeviation } from'./standardDeviation'
 import { xFindClosestIndex} from 'ml-spectra-processing'
-export function labileProtoSignalFilter(data, ranges){
+import max from 'ml-array-max';
 
+export function labileProtoSignalFilter(data, ranges){
     let baseline = baselineData(data, ranges).y
     let baselineMean = (baseline.reduce(function(a, b){
         return a + b;
@@ -16,10 +17,7 @@ export function labileProtoSignalFilter(data, ranges){
     }
 
     let widths = peakList.map((x) => x.width);
-    // // // //change this reduce for ml-array-max
-    let maxwidth = widths.reduce(function (a, b) {
-      return Math.max(a, b);
-    });
+    let maxwidth = max(widths);
     let maxWidthSignalData = peakList[widths.indexOf(maxwidth)];
     maxWidthSignalData.index = xFindClosestIndex(data.x, maxWidthSignalData.x)
     let leftData = data.y.slice(0, maxWidthSignalData.index + 1)
@@ -56,7 +54,6 @@ export function labileProtoSignalFilter(data, ranges){
             
         }
     }
-
     let labileSignalData = {
         'x' : data.x.slice(leftindex, rightindex + 1),
         'y' : data.y.slice(leftindex, rightindex + 1),

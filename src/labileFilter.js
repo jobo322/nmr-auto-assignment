@@ -6,6 +6,8 @@ import { gaussianBounds } from './gaussianBounds';
 import { simulatedAnnealing } from './simulatedAnnealing';
 import { labileData } from './labileData';
 import {xNoiseSanPlot} from 'ml-spectra-processing';
+import {max} from 'ml-array-max';
+import {min} from 'ml-array-min';
 
 export function labileFilter(data, molecule, ranges) {
   molecule.addImplicitHydrogens();
@@ -26,10 +28,7 @@ export function labileFilter(data, molecule, ranges) {
   }
 
   let widths = peakList.map((x) => x.width);
-  // // //change this reduce for ml-array-max
-  let maxwidth = widths.reduce(function (a, b) {
-    return Math.max(a, b);
-  });
+  let maxwidth = max(widths)
   let maxWidthPeakData = peakList[widths.indexOf(maxwidth)];
   let maxWidthPeak = {
     x: maxWidthPeakData.x,
@@ -61,10 +60,7 @@ export function labileFilter(data, molecule, ranges) {
     y: subYspectra,
   };
 
-  // // // use ml-array-max instead of reduce
-  let subYMax = subSpectra.y.reduce(function (a, b) {
-    return Math.max(a, b);
-  });
+  let subYMax = max(subSpectra.y);
   let initialParameters = initialDataGenerator(subSpectra.x, subSpectra.y);
   let boundsPlot = { data: [] };
   // @TODO use peak-shape-generator or spectrum-generator
@@ -96,9 +92,6 @@ export function labileFilter(data, molecule, ranges) {
     upperBound: initialParameters.upperBound,
   };
 
-  // let subXMin =  x.reduce(function(a, b) {
-  // return Math.min(a, b);
-  // });
   // @TODO: import function
   let fitArray = [];
   for (let i = 0; i < 100; i++) {
@@ -107,10 +100,7 @@ export function labileFilter(data, molecule, ranges) {
   let optimumArray = fitArray.map((x) => x.optimum);
   let optimumSD = standardDeviation(optimumArray);
 
-  //@TODO: use ml-array-min
-  let optimum = optimumArray.reduce(function (a, b) {
-    return Math.min(a, b);
-  });
+  let optimum = min(optimumArray);
 
   //@TODO: check if index exist
   let fit = fitArray[optimumArray.indexOf(optimum)];
@@ -160,13 +150,6 @@ export function labileFilter(data, molecule, ranges) {
       ranges[i].labile = true;
     }
   }
-  // ranges = ranges.filter((x) => x != labileProtonRange[0]);
-  // let integralValues = ranges.map((x) => x.integral);
-  // // let totalArea = 0;
-  // let totalArea = integralValues.reduce(function (a, b) {
-  //   return a + b;
-  // }, 0);
-  //ranges, 'after'
   for (let i = 0; i < ranges.length; i++) {
     if (ranges[i].labile) {
       ranges[i].integral *= labileProtonNumber / labileProtonTotalArea;

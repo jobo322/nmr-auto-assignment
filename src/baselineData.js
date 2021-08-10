@@ -9,11 +9,9 @@ export function baselineData(data, ranges){
     let baseline = {
         'x' : [],
         'y' : []
-        
     }
     let indexData = []
     for(let i = 0; i < ranges.length; i++){
-    
             let tmpIndexFrom = spectra.x.filter(a => a < fromData[i])
             tmpIndexFrom = spectra.x.indexOf(tmpIndexFrom[tmpIndexFrom.length-1])
             let tmpIndexTo = spectra.x.filter(a => a < toData[i])
