@@ -26,7 +26,6 @@ export function labileFilter(data, molecule, ranges) {
       peakList.push(...ranges[i].signal[j].peak);
     }
   }
-
   let widths = peakList.map((x) => x.width);
   let maxwidth = max(widths)
   let maxWidthPeakData = peakList[widths.indexOf(maxwidth)];

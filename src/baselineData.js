@@ -21,7 +21,6 @@ export function baselineData(data, ranges){
                 'to': tmpIndexTo
             })
         }
-
         for(let i = 0; i < (indexData.length + 1); i++){
         if(i === 0){
             let tmpBaselineX = spectra.x.slice(0, indexData[i].from)
@@ -43,10 +42,7 @@ export function baselineData(data, ranges){
             baseline.y.push(tmpBaselineY)
             
         }
-
-    
     }
-
     let baselineData = {
         'x': [],
         'y': []

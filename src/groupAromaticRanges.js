@@ -3,7 +3,7 @@ export function groupAromaticRanges(ranges){
     return joinRanges(aromaticRange)
 }
 function joinRanges(ranges){
-
+ 
     let fromData = ranges.map(a => a.from).sort(function(a, b) {
         return a - b;
         });;

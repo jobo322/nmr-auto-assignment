@@ -38,28 +38,28 @@ export function rangesFilter(data, molecule, ranges){
         experimentalSpectraClone.y.fill(baselineMean,labileRangeIndexes.from, labileRangeIndexes.to +1)
         let nH =
         molecule.getMolecularFormula().formula.replace(/.*H([0-9]+).*/, '$1') * 1; 
-        let rangeOptions = {
-            ranges: {
-              nH: nH,
-              realTop: false,
-              thresholdFactor: 0.8,
-              keepPeaks: true,
-              optimize: true,
-              integralType: 'sum',
-              compile: true,
-              frequencyCluster: 20,
-            },
-          };       
-        let newRanges = xyAutoRangesPicking(experimentalSpectraClone, rangeOptions);
+        // let rangeOptions = {
+        //     ranges: {
+        //       nH: nH,
+        //       realTop: false,
+        //       thresholdFactor: 0.8,
+        //       keepPeaks: true,
+        //       optimize: true,
+        //       integralType: 'sum',
+        //       compile: true,
+        //       frequencyCluster: 20,
+        //     },
+        //   };       
+        // let newRanges = xyAutoRangesPicking(experimentalSpectraClone, rangeOptions);
         let labileProtonNumber = labileProton.nbAllLabiles
+
+        let newRanges = ranges.filter(a => (a.from != labileProtonRange[0].from))
         let nonLabileTotalArea = (newRanges.map(a => a.integral).reduce(function(a, b){
             return a + b;
         }, 0))
         for(let i = 0; i < newRanges.length; i++){
             newRanges[i].integral *= (nH - labileProtonNumber) / nonLabileTotalArea
             newRanges[i].labile = false
-        }
-        for(let i = 0; i < newRanges.length; i++){
         }
 
         let labileArea = (data.y.slice(labileRange.from, labileRange.to + 1).reduce(function(a, b){
